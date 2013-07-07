@@ -14,9 +14,9 @@ class Player(object):
                 'inventory':self.get_inventory,
                 'throw 10 candies':self.throw_candy,
                 'eat all the candies':self.eat_candy,
-                'buy a lollipop':self.buy_lollipop,
-                'buy an icecream':self.buy_icecream,
-                'buy a fish':self.buy_fish }
+                'buy a lollipop':self.buy('lollipop'),
+                'buy an icecream':self.buy('icecream'),
+                'buy a fish':self.buy('fish') }
              
     @property
     def avai_commands(self):
@@ -48,6 +48,10 @@ class Player(object):
 
     def eat_candy(self):
         self.candies = 0
+
+    def buy(self, item):
+        self.candies = self.candies - price.get(item)
+        self.set_inventory(item,1)
 
     def buy_lollipop(self):
         self.candies = self.candies - 10 
@@ -90,12 +94,17 @@ thresholds = [ (0,'candies'),
                (20,'buy a fish'),
                (20,'buy an icecream')]
               
-
-"""ascii art look-up """
+"""ascii art look-up.combine with thresholds??? """
 ascii = { 'fish': '<>{',
           'lollipop': 'O-',
           'icecream': '((>-',
           'merchant': 'o[-(\n I am the candy merchant\n I trade things with candies' }
+
+#"""price look-up"""
+price = { 'fish': 20, 
+          'lollipop': 10,
+          'icecream': 20,
+}
 
 class Timer(threading.Thread):
     def __init__(self, player):
