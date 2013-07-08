@@ -24,9 +24,11 @@ class Player(object):
         return [ command for threshold,command in thresholds if threshold< self.candies ] 
         
     def get_inventory(self):
-        for key, value  in self._inventory.items():
-           #print 'you have '+str(value)+' '+key
-           show_ascii(key, value)
+        if self._inventory:
+            for key, value  in self._inventory.items():
+                show_ascii(key, value)
+        else:
+            print "your inventory is empty"
      
     def set_inventory(self, item, quantity):
         if item in self._inventory:
@@ -53,7 +55,9 @@ class Player(object):
         def buy_stuff():
              self.candies = self.candies - price.get(item)
              self.set_inventory(item,1)
+             print "thanks for buying! here's your %s" %item
         return buy_stuff 
+
 
     def play(self):
         command = get_input()
@@ -84,18 +88,16 @@ thresholds = [ (0,'candies'),
                (20,'buy a fish'),
                (20,'buy an icecream')]
               
-"""ascii art look-up.combine with thresholds??? """
-ascii = { 'fish': '<>{',
-          'lollipop': 'O-',
-          'icecream': '((>-',
-          'merchant': 'o[-(\n I am the candy merchant\n I trade things with candies' 
+"""info look-up"""
+lookup = { 'fish':('<>{',20),
+           'lollipop':('O-',10),
+           'icecream':('((>-',20),
+           'merchant':('o[-(\n I am the candy merchant\nwant to trade with candies?',0) 
           }
-
+"""ascii look-up"""
+ascii = { key:value[0] for key, value in lookup.items() }
 """price look-up"""
-price = { 'fish': 20, 
-          'lollipop': 10,
-          'icecream': 20
-}
+price = { key:value[1] for key, value in lookup.items() }
 
 class Timer(threading.Thread):
     def __init__(self, player):
