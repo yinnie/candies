@@ -55,9 +55,8 @@ class Player(object):
         def buy_stuff():
              self.candies = self.candies - price.get(item)
              self.set_inventory(item,1)
-             print "thanks for buying! here's your %s" %item
+             print "thanks for buying! here's your %s for %d candies" %(item, price.get(item) )
         return buy_stuff 
-
 
     def play(self):
         command = get_input()
@@ -89,11 +88,12 @@ thresholds = [ (0,'candies'),
                (20,'buy an icecream')]
               
 """info look-up"""
-lookup = { 'fish':('<>{',20),
-           'lollipop':('O-',10),
-           'icecream':('((>-',20),
-           'merchant':('o[-(\n I am the candy merchant\nwant to trade with candies?',0) 
+lookup = { 'fish':['<>{',20],
+           'lollipop':['O-',10],
+           'icecream':['((>-',20],
+           'merchant':['o[-(\n I am the candy merchant\nwant to trade with candies?',0] 
           }
+
 """ascii look-up"""
 ascii = { key:value[0] for key, value in lookup.items() }
 """price look-up"""
