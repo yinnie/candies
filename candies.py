@@ -14,9 +14,9 @@ class Player(object):
                 'inventory':self.get_inventory,
                 'throw 10 candies':self.throw_candy,
                 'eat all the candies':self.eat_candy,
-                'buy a lollipop':self.buy('lollipop'),
-                'buy an icecream':self.buy('icecream'),
-                'buy a fish':self.buy('fish') }
+                'buy a lollipop': self.buy('lollipop'),
+                'buy an icecream': self.buy('icecream'),
+                'buy a fish': self.buy('fish') }
              
     @property
     def avai_commands(self):
@@ -25,7 +25,7 @@ class Player(object):
         
     def get_inventory(self):
         for key, value  in self._inventory.items():
-           print 'you have '+str(value)+' '+key
+           #print 'you have '+str(value)+' '+key
            show_ascii(key, value)
      
     def set_inventory(self, item, quantity):
@@ -50,20 +50,10 @@ class Player(object):
         self.candies = 0
 
     def buy(self, item):
-        self.candies = self.candies - price.get(item)
-        self.set_inventory(item,1)
-
-    def buy_lollipop(self):
-        self.candies = self.candies - 10 
-        self.set_inventory('lollipop',1)
-
-    def buy_fish(self):
-        self.candies = self.candies - 20
-        self.set_inventory('fish',1)
-
-    def buy_icecream(self):
-        self.candies = self.candies - 20
-        self.set_inventory('icecream',1)
+        def buy_stuff():
+             self.candies = self.candies - price.get(item)
+             self.set_inventory(item,1)
+        return buy_stuff 
 
     def play(self):
         command = get_input()
@@ -98,12 +88,13 @@ thresholds = [ (0,'candies'),
 ascii = { 'fish': '<>{',
           'lollipop': 'O-',
           'icecream': '((>-',
-          'merchant': 'o[-(\n I am the candy merchant\n I trade things with candies' }
+          'merchant': 'o[-(\n I am the candy merchant\n I trade things with candies' 
+          }
 
-#"""price look-up"""
+"""price look-up"""
 price = { 'fish': 20, 
           'lollipop': 10,
-          'icecream': 20,
+          'icecream': 20
 }
 
 class Timer(threading.Thread):
