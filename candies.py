@@ -55,7 +55,7 @@ class Player(object):
         def buy_stuff():
              self.candies = self.candies - price.get(item)
              self.set_inventory(item,1)
-             print "thanks for buying! here's your %s for %d candies" %(item, price.get(item) )
+             print "thanks for buying! here's your %s for %d candies" %(item, %price.get( item)
         return buy_stuff 
 
     def play(self):
@@ -93,17 +93,17 @@ lookup = { 'fish':['<>{',20],
            'icecream':['((>-',20],
            'merchant':['o[-(\n I am the candy merchant\nwant to trade with candies?',0] 
           }
-
 """ascii look-up"""
 ascii = { key:value[0] for key, value in lookup.items() }
 """price look-up"""
 price = { key:value[1] for key, value in lookup.items() }
 
 class Timer(threading.Thread):
-    def __init__(self, player):
+    def __init__(self, player,farm):
         threading.Thread.__init__(self)
         self.event = threading.Event()
         self.player = player 
+        self.farm = farm
 
     def run(self):
         """increment candy by 1 every second"""
@@ -114,8 +114,13 @@ class Timer(threading.Thread):
     def stop(self):
         self.event.set()
         
+class Farm(object):
+    def __init__(self):
+        self.crops = None
+
 def main():
     player = Player()
+    farm = Farm()
     timer = Timer( player )
     timer.start()
     print "enter menu to see menu"
