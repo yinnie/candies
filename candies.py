@@ -78,24 +78,23 @@ def get_input():
 def show_ascii(name, quantity=1):
     print (ascii.get(name) + '\n')* quantity
 
-"""all info look-up"""
+"""info look-up ascii art + price"""
 lookup = { 'fish':['<>{',20],
            'lollipop':['O-',10],
            'icecream':['((>-',20],
            'merchant':['o[-(\n I am the candy merchant\nwant to trade with candies?',0] 
           }
-"""ascii look-up"""
 ascii = { key:value[0] for key, value in lookup.items() }
-"""price look-up"""
 price = { key:value[1] for key, value in lookup.items() }
 
-"""commands generated/enabled from num of candies"""
-price_limits = [ (value, 'buy a '+item) for item, value in price.items() ] 
-"""threshold for commands"""
+"""item enabled for purchase from num of candies"""
+price_limits = [(value, 'buy a '+item) for item, value in price.items() if value>0 ] 
+"""threshold for commands unrelated to buying"""
 thresh_commands = [ (0,'candies'),
                     (0, 'eat all the candies'),
                     (0, 'inventory'),
                     (10,'throw 10 candies') ]
+
 """num of candies needed to execute commands"""
 thresholds = price_limits + thresh_commands 
  
