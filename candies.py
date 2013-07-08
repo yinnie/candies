@@ -55,7 +55,7 @@ class Player(object):
         def buy_stuff():
              self.candies = self.candies - price.get(item)
              self.set_inventory(item,1)
-             print "thanks for buying! here's your %s for %d candies" %(item, %price.get( item)
+             print "thanks for buying! here's your %s for %d candies" %(item, price.get(item) )
         return buy_stuff 
 
     def play(self):
@@ -78,16 +78,7 @@ def get_input():
 def show_ascii(name, quantity=1):
     print (ascii.get(name) + '\n')* quantity
 
-"""num of candies needed to execute commands"""
-thresholds = [ (0,'candies'),
-               (0, 'eat all the candies'),
-               (0, 'inventory'),
-               (10,'throw 10 candies'),
-               (10,'buy a lollipop'),
-               (20,'buy a fish'),
-               (20,'buy an icecream')]
-              
-"""info look-up"""
+"""all info look-up"""
 lookup = { 'fish':['<>{',20],
            'lollipop':['O-',10],
            'icecream':['((>-',20],
@@ -98,6 +89,16 @@ ascii = { key:value[0] for key, value in lookup.items() }
 """price look-up"""
 price = { key:value[1] for key, value in lookup.items() }
 
+"""commands generated/enabled from num of candies"""
+price_limits = [ (value, 'buy a '+item) for item, value in price.items() ] 
+"""threshold for commands"""
+thresh_commands = [ (0,'candies'),
+                    (0, 'eat all the candies'),
+                    (0, 'inventory'),
+                    (10,'throw 10 candies') ]
+"""num of candies needed to execute commands"""
+thresholds = price_limits + thresh_commands 
+ 
 class Timer(threading.Thread):
     def __init__(self, player,farm):
         threading.Thread.__init__(self)
@@ -109,6 +110,7 @@ class Timer(threading.Thread):
         """increment candy by 1 every second"""
         while not self.event.is_set():
             self.player.candies += 1
+            self.farm.growth += 1
             self.event.wait(1)
 
     def stop(self):
@@ -117,15 +119,23 @@ class Timer(threading.Thread):
 class Farm(object):
     def __init__(self):
         self.crops = None
-
+        self.growth = 0
+    def __repr__(self):
+        return "......YYY../\/\/\...|||||.....|||"
+    def grow(self):
+        NotImplementedError
+     
 def main():
     player = Player()
     farm = Farm()
-    timer = Timer( player )
+    timer = Timer( player, farm )
     timer.start()
     print "enter menu to see menu"
     while True:
         player.play()
+
+def test():
+    print thresholds 
 
 if __name__ == '__main__':
     main()
