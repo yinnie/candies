@@ -75,6 +75,7 @@ class Player(object):
 
     def show_farm(self):
         print self.farm
+
     def play(self):
         command = get_input()
         if command == 'menu':
@@ -96,13 +97,13 @@ def show_ascii(name, quantity=1):
     print (ascii.get(name) + '\n')* quantity
 
 """info look-up ascii art + price + growth rates as factor of 1 second"""
-lookup = { 'fish':['<>{',20,1/30],
-           'lollipop':['O-',10, 1],
-           'icecream':['((>-',20, 1/20],
+lookup = { 'fish':['<>{',20, 0.03],
+           'lollipop':['O-',10, 0.12],
+           'icecream':['((>-',20, 0.05],
            'merchant':['o[-(\n I am the candy merchant\nwant to trade with candies?',0,0] 
           }
 ascii = { key:value[0] for key, value in lookup.items() }
-price = { key:value[1] for key, value in lookup.items() }
+price = { key:value[1] for key, value in lookup.items() if value[1]>0 }
 growth= { key:value[2] for key, value in lookup.items() if value[2]>0 } 
 
 """item enabled for purchase from num of candies"""
@@ -151,13 +152,16 @@ class Farm(object):
 
     def plant(self, item):
         self.crops[item] = 1 
+
     def grow(self):
-        for crop in self.crops.keys():
-            self.crops[crop] += crop.grow_rate            
+        if self.crops:
+            for crop in self.crops.keys():
+                self.crops[crop] += crop.grow_rate            
+
     def __repr__(self):
         all_crops = ''
         for crop, quantity in self.crops.items():
-            all_crops += crop.ascii_art + ' '+str(quantity)    
+             all_crops = (crop.ascii_art+' ') * int(quantity)
         return all_crops + "\n......YYY../\/\/\...|||||.....|||"
      
 def main():
@@ -168,9 +172,10 @@ def main():
         player.play()
 
 def test():
-    farm = Farm()
-    print farm
-
+    print growth.get('lollipop')
+    it = Item('lollipop')
+    print it.grow_rate
+    
 if __name__ == '__main__':
     main()
 
