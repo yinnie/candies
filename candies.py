@@ -6,6 +6,8 @@ class Player(object):
     def __init__(self):
         self.candies = 0
         self._inventory = {} 
+        self.timer = Timer(1, self.increment_candy)
+        self.timer.start()
 
     @property
     def all_commands(self):
@@ -51,6 +53,9 @@ class Player(object):
     def eat_candy(self):
         self.candies = 0
 
+    def increment_candy(self):
+        self.candies += 1
+
     def buy(self, item):
         def buy_stuff():
              self.candies = self.candies - price.get(item)
@@ -63,6 +68,7 @@ class Player(object):
         if command == 'menu':
             if self.candies > 10:
                 show_ascii('merchant')
+            print 'candies'+ str(self.candies)
             print '* '+ '\n* '.join(self.avai_commands)
         elif command in self.avai_commands:
             self.do_command(command)  
@@ -78,17 +84,18 @@ def get_input():
 def show_ascii(name, quantity=1):
     print (ascii.get(name) + '\n')* quantity
 
-"""info look-up ascii art + price"""
-lookup = { 'fish':['<>{',20],
-           'lollipop':['O-',10],
-           'icecream':['((>-',20],
-           'merchant':['o[-(\n I am the candy merchant\nwant to trade with candies?',0] 
+"""info look-up ascii art + price + growth rates as factor of 1 second"""
+lookup = { 'fish':['<>{',20,1/30],
+           'lollipop':['O-',10, 1/60],
+           'icecream':['((>-',20, 1/20],
+           'merchant':['o[-(\n I am the candy merchant\nwant to trade with candies?',0,0] 
           }
 ascii = { key:value[0] for key, value in lookup.items() }
 price = { key:value[1] for key, value in lookup.items() }
+growth= { key:value[2] for key, value in lookup.items() if value[2]>0 } 
 
 """item enabled for purchase from num of candies"""
-price_limits = [(value, 'buy a '+item) for item, value in price.items() if value>0 ] 
+price_limits = [(value, 'buy a '+item) for item, value in price.items() ] 
 """threshold for commands unrelated to buying"""
 thresh_commands = [ (0,'candies'),
                     (0, 'eat all the candies'),
@@ -99,18 +106,16 @@ thresh_commands = [ (0,'candies'),
 thresholds = price_limits + thresh_commands 
  
 class Timer(threading.Thread):
-    def __init__(self, player,farm):
+    def __init__(self, interval,action):
         threading.Thread.__init__(self)
         self.event = threading.Event()
-        self.player = player 
-        self.farm = farm
+        self.interval = interval
+        self.action = action
 
     def run(self):
-        """increment candy by 1 every second"""
         while not self.event.is_set():
-            self.player.candies += 1
-            self.farm.growth += 1
-            self.event.wait(1)
+            self.action()
+            self.event.wait(self.interval)
 
     def stop(self):
         self.event.set()
@@ -118,7 +123,6 @@ class Timer(threading.Thread):
 class Farm(object):
     def __init__(self):
         self.crops = None
-        self.growth = 0
     def __repr__(self):
         return "......YYY../\/\/\...|||||.....|||"
     def grow(self):
@@ -126,15 +130,17 @@ class Farm(object):
      
 def main():
     player = Player()
-    farm = Farm()
-    timer = Timer( player, farm )
-    timer.start()
     print "enter menu to see menu"
     while True:
         player.play()
+    player.timer.stop()
 
 def test():
-    print thresholds 
+    timer = Timer(1)
+    timer0 = Timer(2)
+    timer.start()
+    timer0.start()
+    
 
 if __name__ == '__main__':
     main()
