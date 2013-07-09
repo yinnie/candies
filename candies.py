@@ -12,21 +12,21 @@ class Player(object):
 
     @property
     def all_commands(self):
-        """dictionary of all commands in the game"""
-        return {'candies':self.check_candy, 
-                'inventory':self.get_inventory,
-                'farm':self.show_farm,
-                'throw 10 candies':self.throw_candy,
-                'eat all the candies':self.eat_candy,
-                'buy a lollipop': self.buy('lollipop'),
-                'buy an icecream': self.buy('icecream'),
-                'plant a lollipop': self.plant('lollipop'),
-                'buy a fish': self.buy('fish') }
+        """dictionary of commands and their function and price thresholds """
+        return {'candies':(self.check_candy, 0), 
+                'inventory':(self.get_inventory, 0),
+                'farm':(self.show_farm, 0),
+                'throw 10 candies':(self.throw_candy, 10),
+                'eat all the candies':(self.eat_candy, 0),
+                'buy a lollipop': (self.buy('lollipop'), price.get('lollipop')),
+                'buy an icecream': (self.buy('icecream'), price.get('icecream')),
+                'plant a lollipop': (self.plant('lollipop'), self._inventory.has_key('lollipop')),
+                'buy a fish': (self.buy('fish'), price.get('fish')) }
              
     @property
     def avai_commands(self):
         """available actions as a function of num of candies"""
-        return [ command for threshold,command in thresholds if threshold< self.candies ] 
+        return [ command for command, value in self.all_commands.items() if value[1]< self.candies ] 
         
     def get_inventory(self):
         if self._inventory:
@@ -45,7 +45,7 @@ class Player(object):
 
     def do_command(self, command):
         """get the func from dictionary. execute func"""
-        self.all_commands.get(command)()
+        self.all_commands.get(command)[0]()
        
     def check_candy(self):
         print "you have %s candies" %self.candies
@@ -97,8 +97,8 @@ def show_ascii(name, quantity=1):
     print (ascii.get(name) + '\n')* quantity
 
 """info look-up ascii art + price + growth rates as factor of 1 second"""
-lookup = { 'fish':['<>{',20, 0.03],
-           'lollipop':['O-',10, 0.12],
+lookup = { 'fish':['<>{',20, 0.3],
+           'lollipop':['O-',10, 0.1],
            'icecream':['((>-',20, 0.05],
            'merchant':['o[-(\n I am the candy merchant\nwant to trade with candies?',0,0] 
           }
@@ -106,19 +106,6 @@ ascii = { key:value[0] for key, value in lookup.items() }
 price = { key:value[1] for key, value in lookup.items() if value[1]>0 }
 growth= { key:value[2] for key, value in lookup.items() if value[2]>0 } 
 
-"""item enabled for purchase from num of candies"""
-price_limits = [(value, 'buy a '+item) for item, value in price.items() ] 
-"""threshold for commands unrelated to buying"""
-thresh_commands = [ (0,'candies'),
-                    (0, 'eat all the candies'),
-                    (10, 'farm'),
-                    (0, 'inventory'),
-                    (10, 'plant a lollipop'),
-                    (10,'throw 10 candies') ]
-
-"""num of candies needed to execute commands"""
-thresholds = price_limits + thresh_commands 
- 
 class Timer(threading.Thread):
     def __init__(self, interval,action=None):
         threading.Thread.__init__(self)
@@ -161,6 +148,7 @@ class Farm(object):
     def __repr__(self):
         all_crops = ''
         for crop, quantity in self.crops.items():
+            #all_crops += crop.ascii_art + ' '+str(quantity)    
              all_crops = (crop.ascii_art+' ') * int(quantity)
         return all_crops + "\n......YYY../\/\/\...|||||.....|||"
      
