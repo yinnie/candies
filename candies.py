@@ -10,6 +10,7 @@ class Player(object):
         self.timer.start()
         self.farm = farm
         self.symbol = '\o/'
+        self._commands = []
 
     @property
     def all_commands(self):
@@ -23,16 +24,22 @@ class Player(object):
                 'buy an icecream': (self.buy('icecream'), price.get('icecream')),
                 'plant a lollipop': (self.plant('lollipop'), self._inventory.has_key('lollipop')),
                 'go on a quest': (self.go_quest, 100),
-                'peaceful forest': (self.go_quest('peaceful forest'),100), 
-                'mount goblin': (self.go_quest('mount goblin'), 130),
-                'underwater cave': (self.go_quest('underwater cave'), 140),
+                'peaceful forest': (self.go_a_quest('peaceful forest'),100), 
+                'mount goblin': (self.go_a_quest('mount goblin'), 130),
+                'underwater cave': (self.go_a_quest('underwater cave'), 140),
                 'buy a fish': (self.buy('fish'), price.get('fish')) }
              
-    @property
-    def avai_commands(self):
+    def get_commands(self):
         """available actions as a function of num of candies"""
-        return [ command for command, value in self.all_commands.items() if value[1]< self.candies ] 
-        
+        self._commands = [ command for command, value in self.all_commands.items() if value[1]< self.candies ] 
+        return self._commands
+
+    def set_commands(self, new_commands):
+        """add to list of available commands"""
+        self._commands.append( new_commands )
+
+    commands = property(get_commands, set_commands)
+
     def get_inventory(self):
         if self._inventory:
             for key, quantity in self._inventory.items():
@@ -84,16 +91,20 @@ class Player(object):
 
     def go_quest(self):
         avai_quests = [ k for k in quest_lookup.keys() ] 
-        self.avai_commands.set( avai_quests )        
+        self.commands.set( avai_quests )        
         print '* '+ '\n* '.join(avai_quests)
+    
+    def go_a_quest(self, quest_name):
+        quest = Quest( quest_name, self)
+        quest.start()
 
     def play(self):
         command = get_input()
         if command == 'menu':
             if self.candies > 10:
                 show_ascii('merchant')
-            print '* '+ '\n* '.join(self.avai_commands)
-        elif command in self.avai_commands:
+            print '* '+ '\n* '.join(self.commands)
+        elif command in self.commands:
             self.do_command(command)  
             if command!= 'inventory' and command!='candies' and command!='farm':
                 self.get_inventory()
