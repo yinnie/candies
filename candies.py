@@ -61,10 +61,10 @@ class Player(object):
 
     def buy(self, item_name):
         def buy_stuff():
-            self.candies = self.candies - price.get(item)
+            self.candies = self.candies - price.get(item_name)
             new_item = Item( item_name )
             self.set_inventory(new_item,1)
-            print "thanks for buying! here's your %s for %d candies" %(item, price.get(item) )
+            print "thanks for buying! here's your %s for %d candies" %(item_name, price.get(item_name) )
         return buy_stuff 
 
     def plant(self, item_name):
