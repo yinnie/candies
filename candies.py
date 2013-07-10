@@ -9,6 +9,7 @@ class Player(object):
         self.timer = Timer(1, self.increment_candy)
         self.timer.start()
         self.farm = farm
+        self.symbol = '\o/'
 
     @property
     def all_commands(self):
@@ -21,6 +22,10 @@ class Player(object):
                 'buy a lollipop': (self.buy('lollipop'), price.get('lollipop')),
                 'buy an icecream': (self.buy('icecream'), price.get('icecream')),
                 'plant a lollipop': (self.plant('lollipop'), self._inventory.has_key('lollipop')),
+                'go on a quest': (self.go_quest, 100),
+                'peaceful forest': (self.go_quest('peaceful forest'),100), 
+                'mount goblin': (self.go_quest('mount goblin'), 130),
+                'underwater cave': (self.go_quest('underwater cave'), 140),
                 'buy a fish': (self.buy('fish'), price.get('fish')) }
              
     @property
@@ -64,7 +69,8 @@ class Player(object):
             self.candies = self.candies - price.get(item_name)
             new_item = Item( item_name )
             self.set_inventory(new_item,1)
-            print "thanks for buying! here's your %s for %d candies" %(item_name, price.get(item_name) )
+            print "thanks for buying!"
+            print "here's your %s for %d candies" %(item_name, price.get(item_name))
         return buy_stuff 
 
     def plant(self, item_name):
@@ -75,6 +81,11 @@ class Player(object):
 
     def show_farm(self):
         print self.farm
+
+    def go_quest(self):
+        avai_quests = [ k for k in quest_lookup.keys() ] 
+        self.avai_commands.set( avai_quests )        
+        print '* '+ '\n* '.join(avai_quests)
 
     def play(self):
         command = get_input()
@@ -98,7 +109,7 @@ def show_ascii(name, quantity=1):
 
 """info look-up ascii art + price + growth rates as factor of 1 second"""
 lookup = { 'fish':['<>{',20, 0.3],
-           'lollipop':['O-',10, 0.1],
+           'lollipop':['O-',10, 1],
            'icecream':['((>-',20, 0.05],
            'merchant':['o[-(\n I am the candy merchant\nwant to trade with candies?',0,0] 
           }
@@ -107,11 +118,13 @@ price = { key:value[1] for key, value in lookup.items() if value[1]>0 }
 growth= { key:value[2] for key, value in lookup.items() if value[2]>0 } 
 
 class Timer(threading.Thread):
-    def __init__(self, interval,action=None):
+    def __init__(self, interval, action=None, duration=None):
         threading.Thread.__init__(self)
         self.event = threading.Event()
         self.interval = interval
         self.action = action
+        if duration != None:
+            self.clock = threading.Timer(duration, self.stop)
 
     def run(self):
         while not self.event.is_set():
@@ -143,6 +156,7 @@ class Farm(object):
     def grow(self):
         if self.crops:
             for crop in self.crops.keys():
+                #print self.crops.get(crop)
                 self.crops[crop] += crop.grow_rate            
 
     def __repr__(self):
@@ -152,6 +166,49 @@ class Farm(object):
              all_crops = (crop.ascii_art+' ') * int(quantity)
         return all_crops + "\n......YYY../\/\/\...|||||.....|||"
      
+quest_lookup = {'peaceful forest':[3,20, 'YYY__YYYYYYY_YY_YYYYYYYY__YYY_Y'],
+                'mount goblin':[3, 20, '../^^^^^^^\../^^\...../^\..'],
+                'underwater cave': [3, 20, '~~vv~~~~~~~~v~~'] }
+quest_duration  = { name:value[1] for name, value in quest_lookup.items() }
+quest_framerate = { name:value[0] for name, value in quest_lookup.items() }
+quest_ascii     = { name:value[2] for name, value in quest_lookup.items() }
+
+def replace_sym( string, sym, index):
+    """helper function: replace part of the string at index with new sym"""
+    len_sym = len(sym)
+    if len(string)> index + len_sym:
+        l = list(string)
+        l[index] = sym[0]
+        l[index+1] = sym[1]
+        l[index+2] = sym[2]
+        return ''.join(l)
+    else:
+        return string
+    
+class Quest(object):
+    """a fight player goes on. he uses things from inventory. pick up items"""
+    def __init__(self, name, player):
+        self.player = player
+        self.name = name
+        self.timer = Timer(1, self.animate, quest_duration.get(self.name))
+        self.frame = -len(self.player.symbol) 
+        self.framerate = quest_framerate.get(self.name)
+        self.strg = quest_ascii.get(self.name)
+
+    def __repr__(self):
+        """replace part of ascii with player symbol depending on frame num"""
+        self.strg = replace_sym(self.strg, '___', self.frame+3)
+        return replace_sym(self.strg, self.player.symbol, self.frame) 
+        
+    def animate(self):
+        """increment frame number every second"""
+        print self
+        self.frame += self.framerate
+
+    def start(self):
+        self.timer.start()
+        self.timer.clock.start()
+
 def main():
     farm = Farm()
     player = Player(farm)
@@ -160,10 +217,12 @@ def main():
         player.play()
 
 def test():
-    print growth.get('lollipop')
-    it = Item('lollipop')
-    print it.grow_rate
-    
+    farm = Farm()
+    player = Player(farm)
+    quest = Quest('peaceful forest',player)
+    quest.start()
+    #print replace_sym( quest_ascii.get('peaceful forest'),player.symbol, 8 ) 
+
 if __name__ == '__main__':
     main()
 
