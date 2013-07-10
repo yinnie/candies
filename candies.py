@@ -99,7 +99,7 @@ class Player(object):
         quest.start()
 
     def play(self):
-        command = get_input()
+        command = raw_input(">  ")
         if command == 'menu':
             if self.candies > 10:
                 show_ascii('merchant')
@@ -112,9 +112,6 @@ class Player(object):
         else:
             print 'that action is not available. try again'
            
-def get_input():
-        return raw_input(">  ")
-
 def show_ascii(name, quantity=1):
     print (ascii.get(name) + '\n')* quantity
 
