@@ -11,39 +11,36 @@ class Player(object):
         self.farm = farm
         self.symbol = '\o/'
         self._commands = []
+        self.quest = False
 
     @property
     def all_commands(self):
         """dictionary of commands and their function and price thresholds """
-        return {'candies':(self.check_candy, 0), 
-                'inventory':(self.get_inventory, 0),
-                'farm':(self.show_farm, 0),
-                'throw 10 candies':(self.throw_candy, 10),
-                'eat all the candies':(self.eat_candy, 0),
-                'buy a lollipop': (self.buy('lollipop'), price.get('lollipop')),
-                'buy an icecream': (self.buy('icecream'), price.get('icecream')),
+        return {'candies':(self.check_candy, True), 
+                'inventory':(self.get_inventory, True),
+                'farm':(self.show_farm, self._inventory!= {}),
+                'throw 10 candies on the ground':(self.throw_candy, self.candies > 10),
+                'eat all the candies':(self.eat_candy, True),
+                'buy a lollipop': (self.buy('lollipop'), self.candies>price.get('lollipop')),
+                'buy a wooden sword': (self.buy('wooden sword'), self.candies > price.get('wooden sword')),
                 'plant a lollipop': (self.plant('lollipop'), self._inventory.has_key('lollipop')),
-                'go on a quest': (self.go_quest, 100),
-                'peaceful forest': (self.go_a_quest('peaceful forest'),100), 
-                'mount goblin': (self.go_a_quest('mount goblin'), 130),
-                'underwater cave': (self.go_a_quest('underwater cave'), 140),
+                'go on a quest': (self.go_quest, self._inventory.has_key('wooden sword')),
+                'peaceful forest': (self.start_quest('peaceful forest'), self.quest), 
+                'mount goblin': (self.start_quest('mount goblin'), self.quest),
+                'underwater cave': (self.start_quest('underwater cave'), self.quest),
                 'buy a fish': (self.buy('fish'), price.get('fish')) }
              
-    def get_commands(self):
-        """available actions as a function of num of candies"""
-        self._commands = [ command for command, value in self.all_commands.items() if value[1]< self.candies ] 
-        return self._commands
-
-    def set_commands(self, new_commands):
-        """add to list of available commands"""
-        self._commands.append( new_commands )
-
-    commands = property(get_commands, set_commands)
+    @property
+    def commands(self):
+        """available actions if their criteria is met""" 
+        return [ command for command, value in self.all_commands.items() if value[1]==True ]
 
     def get_inventory(self):
         if self._inventory:
             for key, quantity in self._inventory.items():
-                show_ascii(key.name, quantity)
+                print key 
+                print quantity
+                show_ascii(key, quantity)
         else:
             print "your inventory is empty"
      
@@ -52,8 +49,6 @@ class Player(object):
            self._inventory[item] += 1
         else:
            self._inventory[item] = 1
-
-    inventory = property(get_inventory, set_inventory)
 
     def do_command(self, command):
         """get the func from dictionary. execute func"""
@@ -74,16 +69,16 @@ class Player(object):
     def buy(self, item_name):
         def buy_stuff():
             self.candies = self.candies - price.get(item_name)
-            new_item = Item( item_name )
-            self.set_inventory(new_item,1)
+            self.set_inventory(item_name,1)
             print "thanks for buying!"
             print "here's your %s for %d candies" %(item_name, price.get(item_name))
+            self.get_inventory() 
         return buy_stuff 
 
     def plant(self, item_name):
         def plant_things():
-            new_item = Item( item_name )
-            self.farm.plant(new_item)
+            self.farm.plant(item_name)
+            self._inventory[item_name] -= 1
         return plant_things
 
     def show_farm(self):
@@ -91,12 +86,15 @@ class Player(object):
 
     def go_quest(self):
         avai_quests = [ k for k in quest_lookup.keys() ] 
-        self.commands.set( avai_quests )        
+        self.quest = True
         print '* '+ '\n* '.join(avai_quests)
     
-    def go_a_quest(self, quest_name):
-        quest = Quest( quest_name, self)
-        quest.start()
+    def start_quest(self, quest_name):
+        def _quest():
+            quest = Quest( quest_name, self)
+            quest.start()
+            self.play()
+        return _quest
 
     def play(self):
         command = raw_input(">  ")
@@ -106,9 +104,6 @@ class Player(object):
             print '* '+ '\n* '.join(self.commands)
         elif command in self.commands:
             self.do_command(command)  
-            if command!= 'inventory' and command!='candies' and command!='farm':
-                self.get_inventory()
-                self.check_candy()
         else:
             print 'that action is not available. try again'
            
@@ -118,7 +113,7 @@ def show_ascii(name, quantity=1):
 """info look-up ascii art + price + growth rates as factor of 1 second"""
 lookup = { 'fish':['<>{',20, 0.3],
            'lollipop':['O-',10, 1],
-           'icecream':['((>-',20, 0.05],
+           'wooden sword':['<(|>--',20, 0.05],
            'merchant':['o[-(\n I am the candy merchant\nwant to trade with candies?',0,0] 
           }
 ascii = { key:value[0] for key, value in lookup.items() }
@@ -149,7 +144,11 @@ class Item(object):
         self.ascii_art = ascii.get(name)
         self.price = price.get(name)
         self.grow_rate = growth.get(name) 
-        
+    
+    @classmethod
+    def growth_rate(cls):
+        return self.grow_rate
+
 class Farm(object):
     """representation of items in the farm"""
     def __init__(self, crops={}):
@@ -158,25 +157,24 @@ class Farm(object):
         self.timer = Timer(1, self.grow)
         self.timer.start()
 
-    def plant(self, item):
-        self.crops[item] = 1 
+    def plant(self, item_name):
+        self.crops[item_name] = 1 
 
     def grow(self):
         if self.crops:
             for crop in self.crops.keys():
                 #print self.crops.get(crop)
-                self.crops[crop] += crop.grow_rate            
+                self.crops[crop] += growth.get(crop)
 
     def __repr__(self):
         all_crops = ''
         for crop, quantity in self.crops.items():
-            #all_crops += crop.ascii_art + ' '+str(quantity)    
-             all_crops = (crop.ascii_art+' ') * int(quantity)
+             all_crops = (ascii.get(crop)+' ') * int(quantity)
         return all_crops + "\n......YYY../\/\/\...|||||.....|||"
      
-quest_lookup = {'peaceful forest':[3,20, 'YYY__YYYYYYY_YY_YYYYYYYY__YYY_Y'],
-                'mount goblin':[3, 20, '../^^^^^^^\../^^\...../^\..'],
-                'underwater cave': [3, 20, '~~vv~~~~~~~~v~~'] }
+quest_lookup = {'peaceful forest':[3,10, 'YYY__YYYYYYY_YY_YYYYYYYY__YYY_Y'],
+                'mount goblin':[3, 10, '../^^^^^^^\../^^\...../^\..'],
+                'underwater cave': [3, 10, '~~vv~~~~~~~~v~~'] }
 quest_duration  = { name:value[1] for name, value in quest_lookup.items() }
 quest_framerate = { name:value[0] for name, value in quest_lookup.items() }
 quest_ascii     = { name:value[2] for name, value in quest_lookup.items() }
@@ -220,16 +218,22 @@ class Quest(object):
 def main():
     farm = Farm()
     player = Player(farm)
-    print "enter menu to see menu"
-    while True:
-        player.play()
+    print "enter menu
+    testing = False 
 
-def test():
-    farm = Farm()
-    player = Player(farm)
-    quest = Quest('peaceful forest',player)
-    quest.start()
-    #print replace_sym( quest_ascii.get('peaceful forest'),player.symbol, 8 ) 
+    def test(player):
+        #player.start_quest('peaceful forest')        
+        def printing():
+            print 'hello'
+        t = Timer(1, printing, 5)
+        t.start()
+        t.clock.start()
+    if testing:
+        test(player)
+        #print 'finished'
+    else:
+        while not testing:
+            player.play()
 
 if __name__ == '__main__':
     main()
