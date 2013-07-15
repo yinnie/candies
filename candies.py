@@ -16,9 +16,9 @@ class Player(object):
     @property
     def all_commands(self):
         """dictionary of commands and their function and price thresholds """
-        return {'candies':(self.check_candy, True), 
+        return {'check candies':(self.check_candy, True), 
                 'inventory':(self.get_inventory, True),
-                'farm':(self.show_farm, self._inventory!= {}),
+                'check farm':(self.show_farm, self._inventory!= {}),
                 'throw 10 candies on the ground':(self.throw_candy, self.candies > 10),
                 'eat all the candies':(self.eat_candy, True),
                 'buy a lollipop': (self.buy('lollipop'), self.candies>price.get('lollipop')),
@@ -38,9 +38,10 @@ class Player(object):
     def get_inventory(self):
         if self._inventory:
             for key, quantity in self._inventory.items():
-                print key 
-                print quantity
-                show_ascii(key, quantity)
+                if quantity > 0:
+                    print key 
+                    print quantity
+                    show_ascii(key, quantity)
         else:
             print "your inventory is empty"
      
@@ -71,7 +72,9 @@ class Player(object):
             self.candies = self.candies - price.get(item_name)
             self.set_inventory(item_name,1)
             print "thanks for buying!"
-            print "here's your %s for %d candies" %(item_name, price.get(item_name))
+            print "here's your %s for %d candies" %(ascii.get(item_name), price.get(item_name))
+            print "''''''''''''''''''''''''''''''''''''''''''''''''''"
+            print "here's your current inventory"
             self.get_inventory() 
         return buy_stuff 
 
@@ -79,6 +82,7 @@ class Player(object):
         def plant_things():
             self.farm.plant(item_name)
             self._inventory[item_name] -= 1
+            print " go check out your farm! " 
         return plant_things
 
     def show_farm(self):
@@ -96,14 +100,19 @@ class Player(object):
             self.play()
         return _quest
 
+    def show_menu(self):
+        print"'''''''''''''''''''''''''''''''''''''''''''''''''"
+        print"~~~available actions:~~~~"
+        if self.candies > 10:
+              show_ascii('merchant')
+        print '* '+ '\n* '.join(self.commands)
+
     def play(self):
         command = raw_input(">  ")
-        if command == 'menu':
-            if self.candies > 10:
-                show_ascii('merchant')
-            print '* '+ '\n* '.join(self.commands)
-        elif command in self.commands:
+        if command in self.commands:
+            print"'''''''''''''''''''''''''''''''''''''''''''''''''''"
             self.do_command(command)  
+            self.show_menu()
         else:
             print 'that action is not available. try again'
            
@@ -218,7 +227,8 @@ class Quest(object):
 def main():
     farm = Farm()
     player = Player(farm)
-    print "enter menu
+    print "~~~enter a command to play~~~" 
+    player.show_menu()
     testing = False 
 
     def test(player):
@@ -230,7 +240,6 @@ def main():
         t.clock.start()
     if testing:
         test(player)
-        #print 'finished'
     else:
         while not testing:
             player.play()
