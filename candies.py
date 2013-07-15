@@ -10,8 +10,8 @@ class Player(object):
         self.timer.start()
         self.farm = farm
         self.symbol = '\o/'
-        self._commands = []
         self.quest = False
+        self._commands = []
 
     @property
     def all_commands(self):
@@ -91,6 +91,7 @@ class Player(object):
     def go_quest(self):
         avai_quests = [ k for k in quest_lookup.keys() ] 
         self.quest = True
+        print " choose a quest to go on ! " 
         print '* '+ '\n* '.join(avai_quests)
     
     def start_quest(self, quest_name):
