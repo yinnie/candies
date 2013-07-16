@@ -1,4 +1,4 @@
-# making the candies web game in terminal
+#server app for candies game
 import time
 import threading
 
@@ -37,13 +37,16 @@ class Player(object):
 
     def get_inventory(self):
         if self._inventory:
+            all_inventory = ""
             for key, quantity in self._inventory.items():
                 if quantity > 0:
-                    print key 
-                    print quantity
-                    show_ascii(key, quantity)
+                    s0= key 
+                    s1= str(quantity)
+                    s2= show_ascii(key, quantity)
+                    all_inventory += ( s0+'\n'+s1+'\n'+s2+'\n') 
+            return  all_inventory
         else:
-            print "your inventory is empty"
+            return "your inventory is empty"
      
     def set_inventory(self, item, quantity):
         if item in self._inventory:
@@ -53,16 +56,18 @@ class Player(object):
 
     def do_command(self, command):
         """get the func from dictionary. execute func"""
-        self.all_commands.get(command)[0]()
+        return self.all_commands.get(command)[0]()
        
     def check_candy(self):
-        print "you have %s candies" %self.candies
+        return "you have %s candies" %self.candies
 
     def throw_candy(self):
         self.candies = self.candies - 10
+        return self.check_candy() 
 
     def eat_candy(self):
         self.candies = 0
+        return self.check_candy()
 
     def increment_candy(self):
         self.candies += 1
@@ -71,60 +76,63 @@ class Player(object):
         def buy_stuff():
             self.candies = self.candies - price.get(item_name)
             self.set_inventory(item_name,1)
-            print "thanks for buying!"
-            print "here's your %s for %d candies" %(ascii.get(item_name), price.get(item_name))
-            print "''''''''''''''''''''''''''''''''''''''''''''''''''"
-            print "here's your current inventory"
-            self.get_inventory() 
+            s0= "thanks for buying!"
+            s1= "here's your %s for %d candies" %(ascii.get(item_name), price.get(item_name))
+            s2= "''''''''''''''''''''''''''''''''''''''''''''''''''"
+            s3= "here's your current inventory"
+            s4= self.get_inventory() 
+            return s0+'\n'+s1+'\n'+s2+'\n'+s3+'\n'+ s4  
         return buy_stuff 
 
     def plant(self, item_name):
         def plant_things():
             self.farm.plant(item_name)
             self._inventory[item_name] -= 1
-            print " go check out your farm! " 
+            return " you just planted a %s. Go check out your farm! " %item_name 
         return plant_things
 
     def show_farm(self):
-        print self.farm
+        return self.farm
 
     def go_quest(self):
         avai_quests = [ k for k in quest_lookup.keys() ] 
         self.quest = True
-        print " choose a quest to go on ! " 
-        print '* '+ '\n* '.join(avai_quests)
-    
+        s= "choose a quest to go on ! \n" 
+        s+= '\n'.join(avai_quests)
+        s+= '\n'
+        return  s 
+
     def start_quest(self, quest_name):
         def _quest():
             quest = Quest( quest_name, self)
             quest.start()
-            self.play()
+            self.play('go on a quest')
         return _quest
 
     def show_menu(self):
-        print"'''''''''''''''''''''''''''''''''''''''''''''''''"
-        print"~~~available actions:~~~~"
+        s0= "'''''''''''''''''''''''''''''''''''''''''''''''''"
+        s1= "~~~available actions:~~~~"
         if self.candies > 10:
-              show_ascii('merchant')
-        print '* '+ '\n* '.join(self.commands)
-
-    def play(self):
-        command = raw_input(">  ")
-        if command in self.commands:
-            print"'''''''''''''''''''''''''''''''''''''''''''''''''''"
-            self.do_command(command)  
-            self.show_menu()
+              s2= show_ascii('merchant')
         else:
-            print 'that action is not available. try again'
-           
+              s2=""
+        s3= '\n'.join(self.commands)
+        return s0+'\n'+ s1 + '\n'+ s2 + '\n'+ s3
+
+    def play(self, command):
+        if command in self.commands:
+            return self.do_command(command)  
+        else:
+            return 'that action is not available. try again'
+
 def show_ascii(name, quantity=1):
-    print (ascii.get(name) + '\n')* quantity
+    return (ascii.get(name) + '\n')* quantity
 
 """info look-up ascii art + price + growth rates as factor of 1 second"""
 lookup = { 'fish':['<>{',20, 0.3],
            'lollipop':['O-',10, 1],
            'wooden sword':['<(|>--',20, 0.05],
-           'merchant':['o[-(\n I am the candy merchant\nwant to trade with candies?',0,0] 
+           'merchant':['o[-( \nI am the candy merchant\nwant to trade with candies?',0,0] 
           }
 ascii = { key:value[0] for key, value in lookup.items() }
 price = { key:value[1] for key, value in lookup.items() if value[1]>0 }
@@ -154,10 +162,6 @@ class Item(object):
         self.ascii_art = ascii.get(name)
         self.price = price.get(name)
         self.grow_rate = growth.get(name) 
-    
-    @classmethod
-    def growth_rate(cls):
-        return self.grow_rate
 
 class Farm(object):
     """representation of items in the farm"""
@@ -180,7 +184,7 @@ class Farm(object):
         all_crops = ''
         for crop, quantity in self.crops.items():
              all_crops = (ascii.get(crop)+' ') * int(quantity)
-        return all_crops + "\n......YYY../\/\/\...|||||.....|||"
+        return  all_crops + "\n" + "YYYYYYYYY|||||||||......YYY../\/\/\...|||||.....|||" 
      
 quest_lookup = {'peaceful forest':[3,10, 'YYY__YYYYYYY_YY_YYYYYYYY__YYY_Y'],
                 'mount goblin':[3, 10, '../^^^^^^^\../^^\...../^\..'],
@@ -218,7 +222,7 @@ class Quest(object):
         
     def animate(self):
         """increment frame number every second"""
-        print self
+        return self
         self.frame += self.framerate
 
     def start(self):
@@ -229,7 +233,7 @@ def main():
     farm = Farm()
     player = Player(farm)
     print "~~~enter a command to play~~~" 
-    player.show_menu()
+    print player.show_menu()
     testing = False 
 
     def test(player):
@@ -243,8 +247,12 @@ def main():
         test(player)
     else:
         while not testing:
-            player.play()
+            command = raw_input("> ")
+            print player.play(command)
+            print player.show_menu()
 
-if __name__ == '__main__':
-    main()
+
+if __name__== '__main__':
+     main()
+
 
