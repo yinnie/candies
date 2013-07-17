@@ -106,7 +106,7 @@ class Player(object):
         def _quest():
             quest = Quest( quest_name, self)
             quest.start()
-            self.play('go on a quest')
+            self.play('start_quest(quest_name)')
         return _quest
 
     def show_menu(self):
@@ -222,7 +222,7 @@ class Quest(object):
         
     def animate(self):
         """increment frame number every second"""
-        return self
+        print self
         self.frame += self.framerate
 
     def start(self):
@@ -237,7 +237,6 @@ def main():
     testing = False 
 
     def test(player):
-        #player.start_quest('peaceful forest')        
         def printing():
             print 'hello'
         t = Timer(1, printing, 5)
