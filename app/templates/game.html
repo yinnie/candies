@@ -1,8 +1,28 @@
 <!-- main template for game interaction -->
-<pre>
+{% if result is string %}
+    <pre id="result">
+{{ result }} 
+    </pre>
+{% else %}
+    <pre id="result">
+    </pre>
 
+    <script>
+        var animation = [ {% for frame in result %}'{{ frame }}', {% endfor %} ]
+        var container = document.getElementById('result');
+        var frame = 0;
+        var animationLoop = setInterval(function () {
+            if (frame < animation.length) {
+                container.innerHTML = animation[frame];
+                frame++;
+            } else {
+                clearInterval(animationLoop);
+            }
+        }, 500);
+    </script>
+{% endif %}
 
-{{ result  }}
+    <pre>
 
 
 
@@ -10,11 +30,12 @@
 
 
 
-</pre>
-<form name="input" action="/game" method="post">
-<br>
-<br>
-<br>
-<br>
-action: <input type="text" name="command">
-</form>
+    </pre>
+    
+    <form name="input" action="/game" method="post">
+    <br>
+    <br>
+    <br>
+    <br>
+    action: <input type="text" name="command">
+    </form>

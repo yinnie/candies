@@ -9,7 +9,7 @@ class Player(object):
         self.timer = Timer(1, self.increment_candy)
         self.timer.start()
         self.farm = farm
-        self.symbol = '\o/'
+        self.symbol = '\\o/'
         self.quest = False
         self._commands = []
 
@@ -104,9 +104,10 @@ class Player(object):
 
     def start_quest(self, quest_name):
         def _quest():
-            quest = Quest( quest_name, self)
-            quest.start()
-            self.play('start_quest(quest_name)')
+            quest = Quest(quest_name, self)
+            #quest.start()
+            #self.play('start_quest(quest_name)')
+            return quest.frames         
         return _quest
 
     def show_menu(self):
@@ -220,6 +221,15 @@ class Quest(object):
         self.strg = replace_sym(self.strg, '___', self.frame+3)
         return replace_sym(self.strg, self.player.symbol, self.frame) 
         
+    @property
+    def frames(self):
+        """all the frames of the animation to be sent to browser"""
+        frames = [] 
+        for x in range(self.frame, quest_duration.get(self.name)):
+            frames.append(self.__repr__() )
+            self.frame += self.framerate
+        return frames
+
     def animate(self):
         """increment frame number every second"""
         print self
@@ -234,6 +244,7 @@ def main():
     player = Player(farm)
     print "~~~enter a command to play~~~" 
     print player.show_menu()
+    
     testing = False 
 
     def test(player):
@@ -242,10 +253,11 @@ def main():
         t = Timer(1, printing, 5)
         t.start()
         t.clock.start()
+
     if testing:
         test(player)
     else:
-        while not testing:
+        while True:
             command = raw_input("> ")
             print player.play(command)
             print player.show_menu()
