@@ -32,7 +32,7 @@ def hi(game):
     return " hi hi hi"
 
 def process_command(game, words):
-    '''take the first word of user typed text and look up function in commands'''
+    '''take the first word of user typed text and look up '''
     word = words[0]
     if word == 'quit':
        return 'bye'

@@ -1,6 +1,4 @@
-#server app for candies game
-import time
-import threading
+import sys, time, threading, inspect
 
 class Player(object):
     def __init__(self, farm):
@@ -10,41 +8,17 @@ class Player(object):
         self.timer.start()
         self.farm = farm
         self.symbol = '\\o/'
-        self.quest = False
-        self._commands = []
-
-    @property
-    def all_commands(self):
-        """dictionary of commands and their function and price thresholds """
-        return {'check candies':(self.check_candy, True), 
-                'inventory':(self.get_inventory, True),
-                'check farm':(self.show_farm, self._inventory!= {}),
-                'throw 10 candies on the ground':(self.throw_candy, self.candies > 10),
-                'eat all the candies':(self.eat_candy, True),
-                'buy a lollipop': (self.buy('lollipop'), self.candies>price.get('lollipop')),
-                'buy a wooden sword': (self.buy('wooden sword'), self.candies > price.get('wooden sword')),
-                'plant a lollipop': (self.plant('lollipop'), self._inventory.has_key('lollipop')),
-                'go on a quest': (self.go_quest, self._inventory.has_key('wooden sword')),
-                'peaceful forest': (self.start_quest('peaceful forest'), self.quest), 
-                'mount goblin': (self.start_quest('mount goblin'), self.quest),
-                'underwater cave': (self.start_quest('underwater cave'), self.quest),
-                'buy a fish': (self.buy('fish'), price.get('fish')) }
-             
-    @property
-    def commands(self):
-        """available actions if their criteria is met""" 
-        return [ command for command, value in self.all_commands.items() if value[1]==True ]
 
     def get_inventory(self):
         if self._inventory:
-            all_inventory = ""
-            for key, quantity in self._inventory.items():
+           all_inventory = ""
+           for key, quantity in self._inventory.items():
                 if quantity > 0:
                     s0= key 
                     s1= str(quantity)
                     s2= show_ascii(key, quantity)
                     all_inventory += ( s0+'\n'+s1+'\n'+s2+'\n') 
-            return  all_inventory
+           return  all_inventory
         else:
             return "your inventory is empty"
      
@@ -54,45 +28,8 @@ class Player(object):
         else:
            self._inventory[item] = 1
 
-    def do_command(self, command):
-        """get the func from dictionary. execute func"""
-        return self.all_commands.get(command)[0]()
-       
-    def check_candy(self):
-        return "you have %s candies" %self.candies
-
-    def throw_candy(self):
-        self.candies = self.candies - 10
-        return self.check_candy() 
-
-    def eat_candy(self):
-        self.candies = 0
-        return self.check_candy()
-
     def increment_candy(self):
         self.candies += 1
-
-    def buy(self, item_name):
-        def buy_stuff():
-            self.candies = self.candies - price.get(item_name)
-            self.set_inventory(item_name,1)
-            s0= "thanks for buying!"
-            s1= "here's your %s for %d candies" %(ascii.get(item_name), price.get(item_name))
-            s2= "''''''''''''''''''''''''''''''''''''''''''''''''''"
-            s3= "here's your current inventory"
-            s4= self.get_inventory() 
-            return s0+'\n'+s1+'\n'+s2+'\n'+s3+'\n'+ s4  
-        return buy_stuff 
-
-    def plant(self, item_name):
-        def plant_things():
-            self.farm.plant(item_name)
-            self._inventory[item_name] -= 1
-            return " you just planted a %s. Go check out your farm! " %item_name 
-        return plant_things
-
-    def show_farm(self):
-        return self.farm
 
     def go_quest(self):
         avai_quests = [ k for k in quest_lookup.keys() ] 
@@ -103,12 +40,10 @@ class Player(object):
         return  s 
 
     def start_quest(self, quest_name):
-        def _quest():
-            quest = Quest(quest_name, self)
-            #quest.start()
-            #self.play('start_quest(quest_name)')
-            return quest.frames         
-        return _quest
+        quest = Quest(quest_name, self)
+        #quest.start()
+        #self.play('start_quest(quest_name)')
+        return quest.frames         
 
     def show_menu(self):
         s0= "'''''''''''''''''''''''''''''''''''''''''''''''''"
@@ -117,29 +52,11 @@ class Player(object):
               s2= show_ascii('merchant')
         else:
               s2=""
-        s3= '\n'.join(self.commands)
+        s3= '\n'.join(commands.keys())
         return s0+'\n'+ s1 + '\n'+ s2 + '\n'+ s3
 
-    def play(self, command):
-        if command in self.commands:
-            return self.do_command(command)  
-        else:
-            return 'that action is not available. try again'
-
-def show_ascii(name, quantity=1):
-    return (ascii.get(name) + '\n')* quantity
-
-"""info look-up ascii art + price + growth rates as factor of 1 second"""
-lookup = { 'fish':['<>{',20, 0.3],
-           'lollipop':['O-',10, 1],
-           'wooden sword':['<(|>--',20, 0.05],
-           'merchant':['o[-( \nI am the candy merchant\nwant to trade with candies?',0,0] 
-          }
-ascii = { key:value[0] for key, value in lookup.items() }
-price = { key:value[1] for key, value in lookup.items() if value[1]>0 }
-growth= { key:value[2] for key, value in lookup.items() if value[2]>0 } 
-
 class Timer(threading.Thread):
+    '''timer for increasing candies and animation'''
     def __init__(self, interval, action=None, duration=None):
         threading.Thread.__init__(self)
         self.event = threading.Event()
@@ -155,19 +72,10 @@ class Timer(threading.Thread):
 
     def stop(self):
         self.event.set()
-        
-class Item(object):
-    """ojbects that a player can buy/grow on farm etc"""
-    def __init__(self, name):
-        self.name = name
-        self.ascii_art = ascii.get(name)
-        self.price = price.get(name)
-        self.grow_rate = growth.get(name) 
-
+ 
 class Farm(object):
     """representation of items in the farm"""
     def __init__(self, crops={}):
-        """crops is a dictionary of item objects"""
         self.crops = crops
         self.timer = Timer(1, self.grow)
         self.timer.start()
@@ -185,17 +93,11 @@ class Farm(object):
         all_crops = ''
         for crop, quantity in self.crops.items():
              all_crops = (ascii.get(crop)+' ') * int(quantity)
-        return  all_crops + "\n" + "YYYYYYYYY|||||||||......YYY../\/\/\...|||||.....|||" 
-     
-quest_lookup = {'peaceful forest':[3,10, 'YYY__YYYYYYY_YY_YYYYYYYY__YYY_Y'],
-                'mount goblin':[3, 10, '../^^^^^^^\../^^\...../^\..'],
-                'underwater cave': [3, 10, '~~vv~~~~~~~~v~~'] }
-quest_duration  = { name:value[1] for name, value in quest_lookup.items() }
-quest_framerate = { name:value[0] for name, value in quest_lookup.items() }
-quest_ascii     = { name:value[2] for name, value in quest_lookup.items() }
+        return all_crops + "\n" + "YYYYYY|||||||||......YYY../\/\/\...||||" 
+
 
 def replace_sym( string, sym, index):
-    """helper function: replace part of the string at index with new sym"""
+    """helper func: replace part of the string at index with new sym"""
     len_sym = len(sym)
     if len(string)> index + len_sym:
         l = list(string)
@@ -205,7 +107,7 @@ def replace_sym( string, sym, index):
         return ''.join(l)
     else:
         return string
-    
+ 
 class Quest(object):
     """a fight player goes on. he uses things from inventory. pick up items"""
     def __init__(self, name, player):
@@ -239,31 +141,124 @@ class Quest(object):
         self.timer.start()
         self.timer.clock.start()
 
-def main():
-    farm = Farm()
-    player = Player(farm)
+farm = Farm()
+player = Player(farm)
+
+commands = {} #'go': (direction, function)
+              #'hi': ( no arg, function)
+
+def show_ascii(name, quantity=1):
+    return (ascii.get(name) + '\n')* quantity
+
+"""info look-up ascii art + price + growth rates as factor of 1 sec"""
+lookup = { 'fish':['<>{',20, 0.3],
+           'lollipop':['O-',10, 1],
+           'wooden sword':['<(|>--',20, 0.05],
+           'merchant':['o[-( \nI am the candy merchant\n',0,0]} 
+
+ascii = { key:value[0] for key, value in lookup.items() }
+price = { key:value[1] for key, value in lookup.items() if value[1]>0 }
+growth= { key:value[2] for key, value in lookup.items() if value[2]>0 } 
+
+quest_lookup = {'peaceful forest':[3,10, 'YYY__YYYYYYY_YY_YYYYYYYY__YYY_Y'],
+                'mount goblin':[3, 10, '../^^^^^^^\../^^\...../^\..'],
+                'underwater cave': [3, 10, '~~vv~~~~~~~~v~~'] }
+
+quest_duration  = { name:value[1] for name, value in quest_lookup.items() }
+quest_framerate = { name:value[0] for name, value in quest_lookup.items() }
+quest_ascii     = { name:value[2] for name, value in quest_lookup.items() }
+
+def command(function):
+    '''decorator to build commands dictionary'''
+    func_name = function.__name__.replace('_',' ')
+    func_args = inspect.getargspec(function).args[1:]
+    commands[func_name] = (func_args, function) 
+
+@command
+def quit(player):
+    exit()
+
+checks = { 'candies'   : player.candies,
+           'inventory' : player.get_inventory(),
+           'farm'      : player.farm }
+
+@command
+def check(player, target):
+    if target not in checks:
+        return 'you need to give a valid {} to check'.format(target)
+    return checks[target]
+
+@command
+def throw_10_candies_on_the_ground(player):
+    player.candies -= 10
+
+@command
+def eat_all_the_candies(player):
+    player.candies = 0
+
+@command
+def buy(player, item):
+    item_name = item[1:]       
+    if item_name not in lookup:
+        return 'give a valid {} to buy'.format(item_name)
+    if player.candies < price.get(item_name):
+        return 'you don\'t have enough candies to buy it'
+    player.candies -= price.get(item_name)
+    player.set_inventory(item_name,1)
+    s0= "thanks for buying!"
+    s1= "here's your %s " %(ascii.get(item_name))
+    return s0+'\n'+s1+'\n'
+
+quests = {'to peaceful forest': player.start_quest('peaceful forest'),
+          'to mount goblin'   : player.start_quest('mount goblin'),
+          'to underwater cave': player.start_quest('underwater cave'),
+          'on a quest'        : player.go_quest() }
+
+@command
+def go(player, place):
+    if place not in quests:
+        return 'give a valid {} to go'.format(place)
+    if 'wooden sword' not in player._inventory.keys():
+        return 'you need a sword to go on a quest'
+    return quests[place]
+
+@command
+def plant(player, item):
+    if item not in player._inventory.keys():
+        return 'you don\'t have {} to plant'.format(item)
+    player.farm.plant(item_name)
+    player._inventory[item_name] -= 1
+    return " you just planted a %s. Go check out your farm! " %item_name 
+
+def process_input(text):
+    '''look up commands and return function results'''
+    first_w = text[0]   
+    args = text[1:]
+    if first_w not in commands:
+        return 'available commands are {}'.format(commands)
+        return 'that command does not exit'
+
+    argspec, function = commands[first_w]
+    if len(args) < len(argspec):
+        return 'you need to give a {}'.format(argspec)
+    #if len(args) > len(argspec):
+    #    return 'you wrote too much'
+
+    return function(player, *args)
+
+def play_game():
     print "~~~enter a command to play~~~" 
-    print player.show_menu()
-    
-    testing = False 
+    while True:
+         user_in = raw_input('>> ')
+         words = user_in.lower().split()
+         result = process_input(words)
+         print player.show_menu()
+         print result 
 
-    def test(player):
-        def printing():
-            print 'hello'
-        t = Timer(1, printing, 5)
-        t.start()
-        t.clock.start()
-
-    if testing:
-        test(player)
-    else:
-        while True:
-            command = raw_input("> ")
-            print player.play(command)
-            print player.show_menu()
-
+farm = Farm()
+player = Player(farm)
 
 if __name__== '__main__':
-     main()
+     play_game()
 
 
