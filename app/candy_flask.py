@@ -1,10 +1,11 @@
-import sys, time, threading, inspect
+import sys, time, threading, inspect, collections
 
 class Player(object):
     def __init__(self, farm):
         self.candies = 0
         self._inventory = {} 
         self.timer = Timer(1, self.increment_candy)
+        self.timer.daemon = True
         self.timer.start()
         self.farm = farm
         self.symbol = '\\o/'
@@ -32,7 +33,7 @@ class Player(object):
         self.candies += 1
 
     def go_quest(self):
-        avai_quests = [ k for k in quest_lookup.keys() ] 
+        avai_quests = [ k for k in quest_lookup ] 
         self.quest = True
         s= "choose a quest to go on ! \n" 
         s+= '\n'.join(avai_quests)
@@ -78,6 +79,7 @@ class Farm(object):
     def __init__(self, crops={}):
         self.crops = crops
         self.timer = Timer(1, self.grow)
+        self.timer.daemon = True
         self.timer.start()
 
     def plant(self, item_name):
@@ -85,7 +87,7 @@ class Farm(object):
 
     def grow(self):
         if self.crops:
-            for crop in self.crops.keys():
+            for crop in self.crops:
                 #print self.crops.get(crop)
                 self.crops[crop] += growth.get(crop)
 
@@ -144,21 +146,11 @@ class Quest(object):
 farm = Farm()
 player = Player(farm)
 
-commands = {} #'go': (direction, function)
+commands = {} #'buy': (func_arguments, function)
               #'hi': ( no arg, function)
 
 def show_ascii(name, quantity=1):
     return (ascii.get(name) + '\n')* quantity
-
-"""info look-up ascii art + price + growth rates as factor of 1 sec"""
-lookup = { 'fish':['<>{',20, 0.3],
-           'lollipop':['O-',10, 1],
-           'wooden sword':['<(|>--',20, 0.05],
-           'merchant':['o[-( \nI am the candy merchant\n',0,0]} 
-
-ascii = { key:value[0] for key, value in lookup.items() }
-price = { key:value[1] for key, value in lookup.items() if value[1]>0 }
-growth= { key:value[2] for key, value in lookup.items() if value[2]>0 } 
 
 quest_lookup = {'peaceful forest':[3,10, 'YYY__YYYYYYY_YY_YYYYYYYY__YYY_Y'],
                 'mount goblin':[3, 10, '../^^^^^^^\../^^\...../^\..'],
@@ -174,19 +166,15 @@ def command(function):
     func_args = inspect.getargspec(function).args[1:]
     commands[func_name] = (func_args, function) 
 
-@command
-def quit(player):
-    exit()
-
-checks = { 'candies'   : player.candies,
-           'inventory' : player.get_inventory(),
-           'farm'      : player.farm }
-
+def checks(player):
+    return { 'candies'   : player.candies,
+             'inventory' : player.get_inventory(),
+             'farm'      : player.farm }
 @command
 def check(player, target):
-    if target not in checks:
+    if target not in checks(player):
         return 'you need to give a valid {} to check'.format(target)
-    return checks[target]
+    return checks(player)[target]
 
 @command
 def throw_10_candies_on_the_ground(player):
@@ -196,18 +184,36 @@ def throw_10_candies_on_the_ground(player):
 def eat_all_the_candies(player):
     player.candies = 0
 
+Item = collections.namedtuple('Item', 'name assci price growth')
+
+fish         = Item ('fish',        '<>{',    20, 0.3)
+lollipop     = Item ('lollipop',    'O--',    10, 1.0)
+wooden_sword = Item ('wooden sword','<(|>--', 20, 0.05)
+
+items = { 'fish'        : ('<>{',    20, 0.3),
+          'lollipop'    : ('O--',    10, 1.0),
+          'wooden sword': ('<(|>--', 20, 0.05)}
 @command
-def buy(player, item):
-    item_name = item[1:]       
-    if item_name not in lookup:
-        return 'give a valid {} to buy'.format(item_name)
-    if player.candies < price.get(item_name):
+def buy(player, to_buy):
+    item = to_buy[2:]       
+    if item not in items:
+        return 'give a valid {} to buy'.format(item)
+    attrs = items.get(item)
+    if player.candies < attrs[1]: 
         return 'you don\'t have enough candies to buy it'
-    player.candies -= price.get(item_name)
-    player.set_inventory(item_name,1)
+    player.candies -= attrs[1] 
+    player.set_inventory(item,1)
     s0= "thanks for buying!"
-    s1= "here's your %s " %(ascii.get(item_name))
+    s1= "here's your %s " %( attrs[0] )
     return s0+'\n'+s1+'\n'
+
+quest_lookup = {'peaceful forest':[3,10, 'YYY__YYYYYYY_YY_YYYYYYYY__YYY_Y'],
+                'mount goblin':[3, 10, '../^^^^^^^\../^^\...../^\..'],
+                'underwater cave': [3, 10, '~~vv~~~~~~~~v~~'] }
+
+quest_duration  = { name:value[1] for name, value in quest_lookup.items() }
+quest_framerate = { name:value[0] for name, value in quest_lookup.items() }
+quest_ascii     = { name:value[2] for name, value in quest_lookup.items() }
 
 quests = {'to peaceful forest': player.start_quest('peaceful forest'),
           'to mount goblin'   : player.start_quest('mount goblin'),
@@ -218,13 +224,13 @@ quests = {'to peaceful forest': player.start_quest('peaceful forest'),
 def go(player, place):
     if place not in quests:
         return 'give a valid {} to go'.format(place)
-    if 'wooden sword' not in player._inventory.keys():
+    if 'wooden sword' not in player._inventory:
         return 'you need a sword to go on a quest'
     return quests[place]
 
 @command
 def plant(player, item):
-    if item not in player._inventory.keys():
+    if item not in player._inventory:
         return 'you don\'t have {} to plant'.format(item)
     player.farm.plant(item_name)
     player._inventory[item_name] -= 1
@@ -233,28 +239,31 @@ def plant(player, item):
 def process_input(text):
     '''look up commands and return function results'''
     first_w = text[0]   
-    args = text[1:]
+    args = ' '.join(text[1:])
     if first_w not in commands:
-        return 'available commands are {}'.format(commands)
         return 'that command does not exit'
 
     argspec, function = commands[first_w]
     if len(args) < len(argspec):
         return 'you need to give a {}'.format(argspec)
-    #if len(args) > len(argspec):
-    #    return 'you wrote too much'
 
-    return function(player, *args)
+    return function(player, args)
 
 def play_game():
     print "~~~enter a command to play~~~" 
     while True:
-         user_in = raw_input('>> ')
-         words = user_in.lower().split()
-         result = process_input(words)
-         print player.show_menu()
-         print result 
-
+         try:
+            user_in = raw_input('>> ')
+            words = user_in.lower().split()
+            if words == ['quit']:
+                 break
+            result = process_input(words)
+            print player.show_menu()
+            print '~~~~~~~~~~~~~~~~~~~~~~~~'
+            print result 
+         except EOFError:
+             print 'oops!'
+            
 farm = Farm()
 player = Player(farm)
 
